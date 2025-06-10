@@ -268,4 +268,131 @@ public int gradoSalida(E data) {
         return count;
     }
 
+// a) Verifica si el grafo es isomorfo con otro
+    public boolean esIsomorfo(GraphLinkDirigido<E> otroGrafo) {
+        // Mismo número de vértices y aristas
+        if (this.listVertex.size() != otroGrafo.listVertex.size() || 
+            this.getTotalAristas() != otroGrafo.getTotalAristas()) {
+            return false;
+        }
+
+        // Misma secuencia de grados de entrada y salida
+        List<Integer> gradosEntradaThis = getSecuenciaGradosEntrada();
+        List<Integer> gradosSalidaThis = getSecuenciaGradosSalida();
+        List<Integer> gradosEntradaOtro = otroGrafo.getSecuenciaGradosEntrada();
+        List<Integer> gradosSalidaOtro = otroGrafo.getSecuenciaGradosSalida();
+
+        return gradosEntradaThis.equals(gradosEntradaOtro) && 
+               gradosSalidaThis.equals(gradosSalidaOtro);
+    }
+
+    // b) Verifica si el grafo es plano (versión simplificada)
+    public boolean esPlano() {
+        // Para grafos dirigidos, usamos el criterio de que e ≤ 3v - 6
+        int v = listVertex.size();
+        int e = getTotalAristas();
+        return e <= 3 * v - 6;
+    }
+
+    // c) Verifica si el grafo es débilmente conexo
+    public boolean esConexo() {
+        if (listVertex.isEmpty()) return true;
+        
+        // Convertimos a no dirigido temporalmente
+        GraphLink<E> noDirigido = convertirANoDirigido();
+        return noDirigido.esConexo();
+    }
+
+    // d) Verifica si el grafo es auto-complementario
+    public boolean esAutoComplementario() {
+        GraphLinkDirigido<E> complemento = getComplemento();
+        return this.esIsomorfo(complemento);
+    }
+
+    // ========== MÉTODOS AUXILIARES ========== //
+
+    // Obtiene el número total de aristas
+    private int getTotalAristas() {
+        int count = 0;
+        Vertex<E> current = listVertex.getFirst();
+        while (current != null) {
+            count += current.listAdj.size();
+            current = listVertex.getNext();
+        }
+        return count;
+    }
+
+    // Obtiene secuencia de grados de entrada
+    private List<Integer> getSecuenciaGradosEntrada() {
+        List<Integer> grados = new ArrayList<>();
+        Vertex<E> current = listVertex.getFirst();
+        while (current != null) {
+            grados.add(gradoEntrada(current.getData()));
+            current = listVertex.getNext();
+        }
+        grados.sort(null);
+        return grados;
+    }
+
+    // Obtiene secuencia de grados de salida
+    private List<Integer> getSecuenciaGradosSalida() {
+        List<Integer> grados = new ArrayList<>();
+        Vertex<E> current = listVertex.getFirst();
+        while (current != null) {
+            grados.add(current.listAdj.size());
+            current = listVertex.getNext();
+        }
+        grados.sort(null);
+        return grados;
+    }
+
+    // Convierte el grafo dirigido a no dirigido temporalmente
+    private GraphLink<E> convertirANoDirigido() {
+        GraphLink<E> noDirigido = new GraphLink<>();
+        
+        // Agregar todos los vértices
+        Vertex<E> current = listVertex.getFirst();
+        while (current != null) {
+            noDirigido.insertVertex(current.getData());
+            current = listVertex.getNext();
+        }
+        
+        // Agregar aristas en ambos sentidos
+        current = listVertex.getFirst();
+        while (current != null) {
+            Edge<E> edge = (Edge<E>) current.listAdj.getFirst();
+            while (edge != null) {
+                noDirigido.insertEdge(current.getData(), edge.refDest.getData());
+                edge = (Edge<E>) current.listAdj.getNext();
+            }
+            current = listVertex.getNext();
+        }
+        
+        return noDirigido;
+    }
+
+    // Genera el grafo complemento
+    private GraphLinkDirigido<E> getComplemento() {
+        GraphLinkDirigido<E> complemento = new GraphLinkDirigido<>();
+        
+        // Agregar todos los vértices
+        Vertex<E> current = listVertex.getFirst();
+        while (current != null) {
+            complemento.insertVertex(current.getData());
+            current = listVertex.getNext();
+        }
+        
+        // Agregar aristas que no existen en el original
+        List<Vertex<E>> vertices = getVerticesAsList();
+        for (Vertex<E> v1 : vertices) {
+            for (Vertex<E> v2 : vertices) {
+                if (!v1.equals(v2) && !searchEdgeDirigido(v1.getData(), v2.getData())) {
+                    complemento.insertEdge(v1.getData(), v2.getData());
+                }
+            }
+        }
+        
+        return complemento;
+    }
+
 }
